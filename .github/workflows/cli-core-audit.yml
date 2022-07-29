@@ -3,7 +3,7 @@ on:
   push:
     branches: [ main , schedule-audit-daily ]
   schedule:
-   - cron: '0 13 * * *'
+    - cron: '30 13 * * *'
   pull_request:
   
 
