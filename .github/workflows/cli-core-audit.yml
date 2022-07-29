@@ -1,12 +1,10 @@
 name: NPM Audit Check
 on:
   push:
-    branches: 
-     - main 
-     - schedule-audit-daily
+    branches: [ main ]
   pull_request:
   schedule:
-   - cron: '17 12 * * *'
+   - cron: '25 12 * * *'
 
 jobs:
   audit:
