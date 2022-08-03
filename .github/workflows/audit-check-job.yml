@@ -1,10 +1,11 @@
-name: NPM Audit Check
+name: NPM Scheduled Audit Check
 on:
   schedule:
-    - cron: '45 14 * * *'
+    - cron: '00 7 * * *'
+    - cron: '00 7 * * 3'
 
 jobs:
-  audit:
+  audit-dev-weekly:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -12,6 +13,28 @@ jobs:
         node-version: [18.x, 16.x, 14.x]
     steps:
       - name: Checkout cli repo
+        uses: actions/checkout@v2
+        if: github.event.schedule == '00 7 * * 3'
+        with:
+          fetch-depth: 0
+      - run: make install
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+      - name: Run audit check
+        run: npm audit --dev
+        # minimum vulnerability level that will cause the command to fail
+  audit-production-daily:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [18.x, 16.x, 14.x]
+    steps:
+      - name: Checkout cli repo
+        if: github.event.schedule == '00 7 * * *'
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -22,11 +45,11 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: 'npm'
       - name: Run audit check
-        run: npm audit --audit-level=low
+        run: npm audit --production
         # minimum vulnerability level that will cause the command to fail
-  notify-complete-fail:
+  notify-dev-audit-fail:
     if: ${{ failure() && github.ref == 'refs/heads/main' }}
-    needs: [ audit ]
+    needs: [ audit-dev-weekly ]
     name: Notify Npm Audit Failed
     runs-on: ubuntu-latest
     steps:
@@ -40,6 +63,25 @@ jobs:
           SLACK_MSG_AUTHOR: twilio-dx
           SLACK_ICON_EMOJI: ':github:'
           SLACK_TITLE: "Twilio Cli"
-          SLACK_MESSAGE: 'Cli audit test failed'
+          SLACK_MESSAGE: 'Cli weekly dev audit test failed'
+          MSG_MINIMAL: actions url
+          SLACK_FOOTER: Posted automatically using GitHub Actions
+  notify-production-audit-fail:
+    if: ${{ failure() && github.ref == 'refs/heads/main' }}
+    needs: [ audit-production-daily ]
+    name: Notify Npm Audit Failed
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Slack Notification
+        uses: rtCamp/action-slack-notify@v2
+        env:
+          SLACK_WEBHOOK: ${{ secrets.ALERT_SLACK_WEB_HOOK }}
+          SLACK_COLOR: 'danger'
+          SLACK_USERNAME: CLI Github Actions
+          SLACK_MSG_AUTHOR: twilio-dx
+          SLACK_ICON_EMOJI: ':github:'
+          SLACK_TITLE: "Twilio Cli"
+          SLACK_MESSAGE: 'Cli daily production audit test failed'
           MSG_MINIMAL: actions url
           SLACK_FOOTER: Posted automatically using GitHub Actions
