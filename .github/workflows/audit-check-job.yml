@@ -1,8 +1,8 @@
 name: NPM Scheduled Audit Check
 on:
   schedule:
-    - cron: '00 7 * * *'
-    - cron: '00 7 * * 3'
+    - cron: '30 7 * * *'
+    - cron: '30 7 * * 3'
 
 jobs:
   audit-dev-weekly:
@@ -50,7 +50,7 @@ jobs:
   notify-dev-audit-fail:
     if: ${{ failure() && github.ref == 'refs/heads/main' }}
     needs: [ audit-dev-weekly ]
-    name: Notify Npm Audit Failed
+    name: Notify Npm Dev Audit Failed
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -69,7 +69,7 @@ jobs:
   notify-production-audit-fail:
     if: ${{ failure() && github.ref == 'refs/heads/main' }}
     needs: [ audit-production-daily ]
-    name: Notify Npm Audit Failed
+    name: Notify Npm Production Audit Failed
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
